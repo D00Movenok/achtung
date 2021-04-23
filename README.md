@@ -1,4 +1,4 @@
-# Achtung telegram notifications
+# Achtung modular notifications
 
 Command to start:
 

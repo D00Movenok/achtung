@@ -4,8 +4,9 @@ from aiohttp import web
 
 from catcher.common.database import engine
 from catcher.common.models import Base
-from catcher.routers.admin_api import admin_route
-from catcher.routers.catcher_api import catcher_route
+from catcher.routers.chats import chats_route
+from catcher.routers.notifiers import notifiers_route
+from catcher.routers.notify import notify_route
 
 
 async def init_func(argv):
@@ -16,6 +17,7 @@ async def init_func(argv):
         await conn.run_sync(Base.metadata.create_all)
 
     app = web.Application()
-    app.add_routes(admin_route)
-    app.add_routes(catcher_route)
+    app.add_routes(chats_route)
+    app.add_routes(notifiers_route)
+    app.add_routes(notify_route)
     return app
