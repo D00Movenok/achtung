@@ -13,7 +13,7 @@ chat_notifier_links = Table(
 )
 
 
-class Notifiers(Base):
+class Notifier(Base):
     __tablename__ = 'notifiers'
 
     id = Column(Integer, primary_key=True)
@@ -26,8 +26,17 @@ class Notifiers(Base):
     )
     is_enabled = Column(Boolean, nullable=False, default=True)
 
+    async def as_json(self):
+        return {
+            'id': self.id,
+            'name': self.name,
+            'access_token': self.access_token,
+            'targets': [target.id for target in self.targets],
+            'is_enabled': self.is_enabled
+        }
 
-class Chats(Base):
+
+class Chat(Base):
     __tablename__ = 'chats'
 
     id = Column(Integer, primary_key=True)
@@ -38,3 +47,11 @@ class Chats(Base):
         back_populates='targets'
     )
     params = Column(JSON, nullable=False)
+
+    async def as_json(self):
+        return {
+            'id': self.id,
+            'type': self.chat_type,
+            'notifiers': [notifier.id for notifier in self.notifiers],
+            'params': self.params
+        }
