@@ -1,30 +1,128 @@
 from aiohttp import web
+from common.database import async_session
+from common.models import Chat
+from common.utils import get_chat_by_id
+from sqlalchemy.future import select
+from sqlalchemy.orm import selectinload
 
 chats_route = web.RouteTableDef()
 
 
 @chats_route.get('/api/chats')
 async def get_chats(request):
-    return web.Response(text='Hello, world')
+    async with async_session() as session:
+        statement = select(Chat).options(selectinload(Chat.notifiers))
+        chats = await session.execute(statement)
+
+        return web.json_response([
+            await item.as_json() for item in chats.scalars()
+        ])
 
 
+# TODO: validate chat type and params
 @chats_route.post('/api/chats')
 async def create_chat(request):
     data = await request.json()
-    return web.Response(text='Hello, world')
+
+    async with async_session() as session:
+        chat = Chat(chat_type=data['type'],
+                    params=data['params'])
+        session.add(chat)
+
+        try:
+            await session.commit()
+            return web.json_response({
+                'status': 'ok',
+                'id': chat.id
+            })
+        except:
+            await session.rollback()
+            return web.json_response({
+                'status': 'error',
+                'error': 'Unknown error'
+            })
 
 
-@chats_route.get('/api/chats/{id}')
+@chats_route.get(r'/api/chats/{id:\d+}')
 async def get_chat(request):
-    return web.Response(text='Hello, world')
+    chat_id = int(request.match_info['id'])
+
+    async with async_session() as session:
+        chat = await get_chat_by_id(session, chat_id)
+
+        if chat:
+            return web.json_response(await chat.as_json())
+        else:
+            return web.json_response({})
 
 
-@chats_route.put('/api/chats/{id}')
+# TODO: validate chat type and params
+@chats_route.put(r'/api/chats/{id:\d+}')
 async def update_chat(request):
     data = await request.json()
-    return web.Response(text='Hello, world')
+    chat_id = int(request.match_info['id'])
+
+    async with async_session() as session:
+        chat = await get_chat_by_id(session, chat_id)
+        if not chat:
+            return web.json_response({
+                'status': 'error',
+                'error': 'Chat does not exist'
+            })
+
+        chat.chat_type = data.get('type', chat.chat_type)
+        chat.params = data.get('params', chat.params)
+
+        try:
+            await session.commit()
+            return web.json_response({
+                'status': 'ok'
+            })
+        except:
+            await session.rollback()
+            return web.json_response({
+                'status': 'error',
+                'error': 'Unknown error'
+            })
 
 
-@chats_route.delete('/api/chats/{id}')
+@chats_route.delete(r'/api/chats/{id:\d+}')
 async def delete_chat(request):
-    return web.Response(text='Hello, world')
+    chat_id = int(request.match_info['id'])
+
+    async with async_session() as session:
+        chat = await get_chat_by_id(session, chat_id)
+        if not chat:
+            return web.json_response({
+                'status': 'error',
+                'error': 'Chat does not exist'
+            })
+
+        chat.notifiers = []
+        await session.delete(chat)
+
+        try:
+            await session.commit()
+            return web.json_response({
+                'status': 'ok'
+            })
+        except:
+            await session.rollback()
+            return web.json_response({
+                'status': 'error',
+                'error': 'Unknown error'
+            })
+
+
+# TODO: dynamically load types
+@chats_route.get('/api/chats/types')
+def get_chat_types(request):
+    return web.json_response([
+        {
+            'type': 'telegram',
+            'fields': {
+                'token': 'Telegram API token',
+                'chat_id': 'Chat ID to send messages to'
+            }
+        }
+    ])

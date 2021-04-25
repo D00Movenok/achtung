@@ -2,11 +2,11 @@ import logging
 
 from aiohttp import web
 
-from catcher.common.database import engine
-from catcher.common.models import Base
-from catcher.routers.chats import chats_route
-from catcher.routers.notifiers import notifiers_route
-from catcher.routers.notify import notify_route
+from common.database import engine
+from common.models import Base
+from routers.chats import chats_route
+from routers.notifiers import notifiers_route
+from routers.notify import notify_route
 
 
 async def init_func(argv):
@@ -20,4 +20,5 @@ async def init_func(argv):
     app.add_routes(chats_route)
     app.add_routes(notifiers_route)
     app.add_routes(notify_route)
+
     return app
