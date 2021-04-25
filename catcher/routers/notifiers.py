@@ -1,7 +1,7 @@
 from aiohttp import web
-from catcher.common.database import async_session
-from catcher.common.models import Notifier
-from catcher.common.utils import get_chats_by_id, get_notifier_by_id
+from common.database import async_session
+from common.models import Notifier
+from common.utils import get_chats_by_id, get_notifier_by_id
 from sqlalchemy.future import select
 from sqlalchemy.orm import selectinload
 
