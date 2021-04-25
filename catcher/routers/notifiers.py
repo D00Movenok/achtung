@@ -1,30 +1,121 @@
 from aiohttp import web
+from catcher.common.database import async_session
+from catcher.common.models import Notifier
+from catcher.common.utils import get_chats_by_id, get_notifier_by_id
+from sqlalchemy.future import select
+from sqlalchemy.orm import selectinload
 
 notifiers_route = web.RouteTableDef()
 
 
 @notifiers_route.get('/api/notifiers')
 async def get_notifiers(request):
-    return web.Response(text='Hello, world')
+    async with async_session() as session:
+        stmt = select(Notifier).options(selectinload(Notifier.targets))
+        result = await session.execute(stmt)
+        response = [await item.as_json() for item in result.scalars()]
+    return web.json_response(response)
 
 
 @notifiers_route.post('/api/notifiers')
 async def create_notifier(request):
     data = await request.json()
-    return web.Response(text='Hello, world')
+
+    async with async_session() as session:
+        targets_id = set(data['targets'])
+        targets = await get_chats_by_id(session, targets_id)
+        if len(targets) != len(targets_id):
+            return web.json_response({
+                'status': 'error',
+                'error': 'Not all targets exist'
+            })
+
+        try:
+            new_notifier = Notifier(
+                name=data['name'],
+                targets=targets,
+                is_enabled=data['is_enabled']
+            )
+            session.add(new_notifier)
+            await session.commit()
+        except:
+            await session.rollback()
+            return web.json_response({
+                'status': 'error',
+                'error': 'Unknown error'
+            })
+
+    return web.json_response({
+        'status': 'ok',
+        'id': new_notifier.id,
+        'access_token': new_notifier.access_token
+    })
 
 
 @notifiers_route.get('/api/notifiers/{id}')
 async def get_notifier(request):
-    return web.Response(text='Hello, world')
+    async with async_session() as session:
+        response = await get_notifier_by_id(session, request.match_info['id'])
+
+    if not response:
+        return web.json_response({})
+    else:
+        return web.json_response(await response.as_json())
 
 
 @notifiers_route.put('/api/notifiers/{id}')
 async def update_notifier(request):
     data = await request.json()
-    return web.Response(text='Hello, world')
+    async with async_session() as session:
+        notifier = await get_notifier_by_id(session, request.match_info['id'])
+        if not notifier:
+            return web.json_response({
+                'status': 'error',
+                'error': 'Non-existent notifier'
+            })
+
+        targets_id = set(data['targets'])
+        targets = await get_chats_by_id(session, targets_id)
+        if len(targets) != len(targets_id):
+            return web.json_response({
+                'status': 'error',
+                'error': 'Not all targets exist'
+            })
+
+        try:
+            notifier.name = data['name']
+            notifier.targets = targets
+            notifier.is_enabled = data['is_enabled']
+            await session.commit()
+        except:
+            await session.rollback()
+            return web.json_response({
+                'status': 'error',
+                'error': 'Unknown error'
+            })
+
+    return web.json_response({'status': 'ok'})
 
 
 @notifiers_route.delete('/api/notifiers/{id}')
 async def delete_notifier(request):
-    return web.Response(text='Hello, world')
+    async with async_session() as session:
+        try:
+            notifier = await get_notifier_by_id(session,
+                                                request.match_info['id'])
+            if not notifier:
+                return web.json_response({
+                    'status': 'error',
+                    'error': 'Non-existent notifier'
+                })
+
+            notifier.targets = []
+            await session.delete(notifier)
+            await session.commit()
+        except:
+            await session.rollback()
+            return web.json_response({
+                'status': 'error',
+                'error': 'Unknown error'
+            })
+    return web.json_response({'status': 'ok'})
