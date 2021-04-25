@@ -8,19 +8,20 @@ Base = declarative_base()
 
 chat_notifier_links = Table(
     'chat_notifier_links', Base.metadata,
-    Column('notifier_id', Integer, ForeignKey('notifiers.id')),
-    Column('chat_id', Integer, ForeignKey('chats.id'))
+    Column('notifier_id', Integer, ForeignKey('notifier.id')),
+    Column('chat_id', Integer, ForeignKey('chat.id'))
 )
 
 
 class Notifier(Base):
-    __tablename__ = 'notifiers'
+    __tablename__ = 'notifier'
 
     id = Column(Integer, primary_key=True)
-    access_token = Column(String, nullable=False, unique=True, default=uuid4)
+    access_token = Column(String, nullable=False, unique=True,
+                          default=lambda: uuid4().hex)
     name = Column(String, nullable=False)
     targets = relationship(
-        'Chats',
+        'Chat',
         secondary=chat_notifier_links,
         back_populates='notifiers'
     )
@@ -37,12 +38,12 @@ class Notifier(Base):
 
 
 class Chat(Base):
-    __tablename__ = 'chats'
+    __tablename__ = 'chat'
 
     id = Column(Integer, primary_key=True)
     chat_type = Column('type', String, nullable=False)
     notifiers = relationship(
-        'Notifiers',
+        'Notifier',
         secondary=chat_notifier_links,
         back_populates='targets'
     )
