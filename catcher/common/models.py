@@ -20,7 +20,7 @@ class Notifier(Base):
     access_token = Column(String, nullable=False, unique=True, default=uuid4)
     name = Column(String, nullable=False)
     targets = relationship(
-        'Chats',
+        'Chat',
         secondary=chat_notifier_links,
         back_populates='notifiers'
     )
@@ -42,7 +42,7 @@ class Chat(Base):
     id = Column(Integer, primary_key=True)
     chat_type = Column('type', String, nullable=False)
     notifiers = relationship(
-        'Notifiers',
+        'Notifier',
         secondary=chat_notifier_links,
         back_populates='targets'
     )
