@@ -1,0 +1,218 @@
+openapi: 3.0.0
+info:
+  version: 1.0.0-oas3
+  title: 'Achtung Notifier API'
+paths:
+  /api/chats:
+    get:
+      summary: Get list of chats
+      responses:
+        '200':
+          description: List of chats
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ChatInfo'
+    post:
+      summary: Create new chat
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChatInfoNoIndentity'
+      responses:
+        '200':
+          description: New chat created
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/StatusMixin'
+                  - $ref: '#/components/schemas/IdentityMixin'
+  /api/chats/{id}:
+    get:
+      summary: Get information about the chat
+      responses:
+        '200':
+          description: Information about chat
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChatInfo'
+    put:
+      summary: Update information about the chat
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChatInfoNoIndentity'
+      responses:
+        '200':
+          description: Information updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StatusMixin'
+    delete:
+      summary: Delete the chat
+      responses:
+        '200':
+          description: Chat is deleted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StatusMixin'
+  /api/chats/types:
+    get:
+      summary: Get chat type list
+      responses:
+        '200':
+          description: List of chat types
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ChatTypeInfo'
+  /api/notifiers:
+    get:
+      summary: Get list of notifiers
+      responses:
+        '200':
+          description: List of notifiers
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/NotifierInfo'
+    post:
+      summary: Create new notifier
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NotifierInfoNoIdentity'
+      responses:
+        '200':
+          description: Identity of created notifier
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotifierIdentityMixin'
+  /api/notifiers/{id}:
+    get:
+      summary: Get information about the notifier
+      responses:
+        '200':
+          description: Information about notifier
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotifierInfo'
+    put:
+      summary: Update information about the notifier
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NotifierInfoNoIdentity'
+      responses:
+        '200':
+          description: Information updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StatusMixin'
+    delete:
+      summary: Delete the notifier
+      responses:
+        '200':
+          description: Notifier is deleted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StatusMixin'
+components:
+  schemas:
+    IdentityMixin:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 42
+          description: ID of entity
+    NotifierIdentityMixin:
+      allOf:
+        - $ref: '#/components/schemas/IdentityMixin'
+        - type: object
+          properties:
+            access_token:
+              type: string
+              example: 575d1f95-9cf5-47c3-9a8a-0fa836e372f1
+              description: Notifier access token
+    StatusMixin:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [ok, error]
+          example: error
+          description: Did request succeed
+        error:
+          type: string
+          example: Internal error
+          description: Reason why request did not succeed
+    ChatInfoNoIndentity:
+      type: object
+      properties:
+        type:
+          type: string
+          example: telegram
+          description: Type of chat
+        params:
+          type: object
+          example:
+            chat_id: -1000000000
+          description: Configuration of chat
+      required:
+        - type
+        - params
+    ChatInfo:
+      allOf:
+        - $ref: '#/components/schemas/IdentityMixin'
+        - $ref: '#/components/schemas/ChatInfoNoIndentity'
+    ChatTypeInfo:
+      type: object
+      properties:
+        type:
+          $ref: '#/components/schemas/ChatInfoNoIndentity/properties/type'
+        fields:
+          type: object
+          description: Parameters map, key is the parameter name, value is it\'s description
+          additionalProperties:
+            type: string
+          example:
+            chat_id: 'Telegram Chat ID the messages to be sent to'
+    NotifierInfoNoIdentity:
+      type: object
+      properties:
+        name:
+          type: string
+          example: Simple Logger
+          description: Name of the notifier
+        is_enabled:
+          type: boolean
+          example: true
+          description: Can notifier send messages
+        targets:
+          type: array
+          description: List of chats ids
+          items:
+            $ref: '#/components/schemas/IdentityMixin/properties/id'
+    NotifierInfo:
+      allOf:
+        - $ref: '#/components/schemas/NotifierIdentityMixin'
+        - $ref: '#/components/schemas/NotifierInfoNoIdentity'
