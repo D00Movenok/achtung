@@ -5,10 +5,13 @@ from common.utils import get_chats_by_id, get_notifier_by_id
 from sqlalchemy.future import select
 from sqlalchemy.orm import selectinload
 
+from routers.decorators import admin_auth
+
 notifiers_route = web.RouteTableDef()
 
 
 @notifiers_route.get('/api/notifiers')
+@admin_auth
 async def get_notifiers(request):
     async with async_session() as session:
         stmt = select(Notifier).options(selectinload(Notifier.targets))
@@ -18,6 +21,7 @@ async def get_notifiers(request):
 
 
 @notifiers_route.post('/api/notifiers')
+@admin_auth
 async def create_notifier(request):
     data = await request.json()
 
@@ -53,6 +57,7 @@ async def create_notifier(request):
 
 
 @notifiers_route.get('/api/notifiers/{id}')
+@admin_auth
 async def get_notifier(request):
     async with async_session() as session:
         response = await get_notifier_by_id(session, request.match_info['id'])
@@ -64,6 +69,7 @@ async def get_notifier(request):
 
 
 @notifiers_route.put('/api/notifiers/{id}')
+@admin_auth
 async def update_notifier(request):
     data = await request.json()
     async with async_session() as session:
@@ -98,6 +104,7 @@ async def update_notifier(request):
 
 
 @notifiers_route.delete('/api/notifiers/{id}')
+@admin_auth
 async def delete_notifier(request):
     async with async_session() as session:
         try:
