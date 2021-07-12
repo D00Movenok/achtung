@@ -3,5 +3,5 @@ from senders.telegram import Telegram
 
 mapper = dict()
 # register new senders
-mapper['telegram'] = Telegram
-mapper['discord'] = Discord
+mapper['Telegram'] = Telegram
+mapper['Discord'] = Discord

@@ -10,6 +10,6 @@ def admin_auth(handler):
 
             return web.HTTPUnauthorized()
 
-        return handler(request)
+        return await handler(request)
 
     return inner

@@ -13,11 +13,18 @@ notifiers_route = web.RouteTableDef()
 @notifiers_route.get('/api/notifiers')
 @admin_auth
 async def get_notifiers(request):
+    offset = int(request.query['offset'])
+    limit = int(request.query['limit'])
+
     async with async_session() as session:
         stmt = select(Notifier).options(selectinload(Notifier.targets))
-        result = await session.execute(stmt)
-        response = [await item.as_json() for item in result.scalars()]
-    return web.json_response(response)
+        if offset is not None and limit is not None:
+            stmt = stmt.where(Notifier.id > offset * limit).limit(limit)
+        notifiers = await session.execute(stmt)
+
+        return web.json_response([
+            await item.as_json() for item in notifiers.scalars()
+        ])
 
 
 @notifiers_route.post('/api/notifiers')
@@ -34,14 +41,20 @@ async def create_notifier(request):
                 'error': 'Not all targets exist'
             })
 
+        notifier = Notifier(
+            name=data['name'],
+            targets=targets,
+            is_enabled=data['is_enabled']
+        )
+        session.add(notifier)
+
         try:
-            new_notifier = Notifier(
-                name=data['name'],
-                targets=targets,
-                is_enabled=data['is_enabled']
-            )
-            session.add(new_notifier)
             await session.commit()
+            return web.json_response({
+                'status': 'ok',
+                'id': notifier.id,
+                'access_token': notifier.access_token
+            })
         except:
             await session.rollback()
             return web.json_response({
@@ -49,80 +62,85 @@ async def create_notifier(request):
                 'error': 'Unknown error'
             })
 
-    return web.json_response({
-        'status': 'ok',
-        'id': new_notifier.id,
-        'access_token': new_notifier.access_token
-    })
 
-
-@notifiers_route.get('/api/notifiers/{id}')
+@notifiers_route.get('/api/notifiers/{id:\d+}')
 @admin_auth
 async def get_notifier(request):
+    notifier_id = int(request.match_info['id'])
+
     async with async_session() as session:
-        response = await get_notifier_by_id(session, request.match_info['id'])
+        notifier = await get_notifier_by_id(session, notifier_id)
 
-    if not response:
-        return web.json_response({})
-    else:
-        return web.json_response(await response.as_json())
+        if notifier:
+            return web.json_response(await notifier.as_json())
+        else:
+            return web.json_response({})
 
 
-@notifiers_route.put('/api/notifiers/{id}')
+@notifiers_route.put('/api/notifiers/{id:\d+}')
 @admin_auth
 async def update_notifier(request):
     data = await request.json()
+    notifier_id = int(request.match_info['id'])
+
     async with async_session() as session:
-        notifier = await get_notifier_by_id(session, request.match_info['id'])
+        notifier = await get_notifier_by_id(session, notifier_id)
         if not notifier:
             return web.json_response({
                 'status': 'error',
-                'error': 'Non-existent notifier'
+                'error': 'Notifier does not exist'
             })
 
-        targets_id = set(data['targets'])
-        targets = await get_chats_by_id(session, targets_id)
-        if len(targets) != len(targets_id):
-            return web.json_response({
-                'status': 'error',
-                'error': 'Not all targets exist'
-            })
-
-        try:
-            notifier.name = data['name']
-            notifier.targets = targets
-            notifier.is_enabled = data['is_enabled']
-            await session.commit()
-        except:
-            await session.rollback()
-            return web.json_response({
-                'status': 'error',
-                'error': 'Unknown error'
-            })
-
-    return web.json_response({'status': 'ok'})
-
-
-@notifiers_route.delete('/api/notifiers/{id}')
-@admin_auth
-async def delete_notifier(request):
-    async with async_session() as session:
-        try:
-            notifier = await get_notifier_by_id(session,
-                                                request.match_info['id'])
-            if not notifier:
+        if len(data['targets']) > 0:
+            targets_id = set(data['targets'])
+            targets = await get_chats_by_id(session, targets_id)
+            if len(targets) != len(targets_id):
                 return web.json_response({
                     'status': 'error',
-                    'error': 'Non-existent notifier'
+                    'error': 'Not all targets exist'
                 })
+            notifier.targets = targets
 
-            notifier.targets = []
-            await session.delete(notifier)
+        notifier.name = data.get('name', notifier.name)
+        notifier.is_enabled = data.get('is_enabled', notifier.is_enabled)
+
+        try:
             await session.commit()
+            return web.json_response({
+                'status': 'ok'
+            })
         except:
             await session.rollback()
             return web.json_response({
                 'status': 'error',
                 'error': 'Unknown error'
             })
-    return web.json_response({'status': 'ok'})
+
+
+@notifiers_route.delete('/api/notifiers/{id:\d+}')
+@admin_auth
+async def delete_notifier(request):
+    notifier_id = int(request.match_info['id'])
+
+    async with async_session() as session:
+        notifier = await get_notifier_by_id(session, notifier_id)
+        if not notifier:
+            return web.json_response({
+                'status': 'error',
+                'error': 'Notifier does not exist'
+            })
+
+        notifier.targets = []
+        await session.delete(notifier)
+
+        try:
+            await session.commit()
+            return web.json_response({
+                'status': 'ok'
+            })
+        except:
+            await session.rollback()
+            return web.json_response({
+                'status': 'error',
+                'error': 'Unknown error'
+            })

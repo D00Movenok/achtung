@@ -5,7 +5,7 @@ from senders.base import Sender
 
 class Telegram(Sender):
     required_fields = {
-        'token': 'telegram bot api token',
+        'token': 'Telegram Bot API token',
         'chat_id': 'chat id where notifications will be sent'
     }
 

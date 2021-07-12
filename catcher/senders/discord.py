@@ -5,7 +5,7 @@ from senders.base import Sender
 
 class Discord(Sender):
     required_fields = {
-        'token': 'discord bot api token',
+        'token': 'Discord Bot API token',
         'channel_id': 'channel id where notifications will be sent'
     }
 
