@@ -91,7 +91,7 @@ async def update_notifier(request):
                 'error': 'Notifier does not exist'
             })
 
-        if len(data['targets']) > 0:
+        if 'targets' in data:
             targets_id = set(data['targets'])
             targets = await get_chats_by_id(session, targets_id)
             if len(targets) != len(targets_id):

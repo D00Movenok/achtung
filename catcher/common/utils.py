@@ -1,6 +1,7 @@
-from common.models import Chat, Notifier
 from sqlalchemy.future import select
 from sqlalchemy.orm import selectinload
+
+from common.models import Chat, Notifier
 
 
 async def get_chat_by_id(session, chat_id):
