@@ -6,14 +6,22 @@ from senders.senders import mapper
 from sqlalchemy.future import select
 from sqlalchemy.orm import selectinload
 
+from routers.decorators import admin_auth
+
 chats_route = web.RouteTableDef()
 
 
 @chats_route.get('/api/chats')
+@admin_auth
 async def get_chats(request):
+    offset = int(request.query['offset'])
+    limit = int(request.query['limit'])
+
     async with async_session() as session:
-        statement = select(Chat).options(selectinload(Chat.notifiers))
-        chats = await session.execute(statement)
+        stmt = select(Chat).options(selectinload(Chat.notifiers))
+        if offset is not None and limit is not None:
+            stmt = stmt.where(Chat.id > offset * limit).limit(limit)
+        chats = await session.execute(stmt)
 
         return web.json_response([
             await item.as_json() for item in chats.scalars()
@@ -22,11 +30,13 @@ async def get_chats(request):
 
 # TODO: validate chat type and params
 @chats_route.post('/api/chats')
+@admin_auth
 async def create_chat(request):
     data = await request.json()
 
     async with async_session() as session:
-        chat = Chat(chat_type=data['type'],
+        chat = Chat(name=data['name'],
+                    chat_type=data['type'],
                     params=data['params'])
         session.add(chat)
 
@@ -45,6 +55,7 @@ async def create_chat(request):
 
 
 @chats_route.get(r'/api/chats/{id:\d+}')
+@admin_auth
 async def get_chat(request):
     chat_id = int(request.match_info['id'])
 
@@ -59,6 +70,7 @@ async def get_chat(request):
 
 # TODO: validate chat type and params
 @chats_route.put(r'/api/chats/{id:\d+}')
+@admin_auth
 async def update_chat(request):
     data = await request.json()
     chat_id = int(request.match_info['id'])
@@ -71,6 +83,7 @@ async def update_chat(request):
                 'error': 'Chat does not exist'
             })
 
+        chat.name = data.get('name', chat.name)
         chat.chat_type = data.get('type', chat.chat_type)
         chat.params = data.get('params', chat.params)
 
@@ -88,6 +101,7 @@ async def update_chat(request):
 
 
 @chats_route.delete(r'/api/chats/{id:\d+}')
+@admin_auth
 async def delete_chat(request):
     chat_id = int(request.match_info['id'])
 
@@ -116,7 +130,8 @@ async def delete_chat(request):
 
 
 @chats_route.get('/api/chats/types')
-def get_chat_types(request):
+@admin_auth
+async def get_chat_types(request):
     return web.json_response([
         {'type': key, 'fields': value.required_fields}
         for key, value in mapper.items()

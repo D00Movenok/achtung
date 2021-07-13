@@ -41,6 +41,7 @@ class Chat(Base):
     __tablename__ = 'chat'
 
     id = Column(Integer, primary_key=True)
+    name = Column(String, nullable=False)
     chat_type = Column('type', String, nullable=False)
     notifiers = relationship(
         'Notifier',
@@ -52,6 +53,7 @@ class Chat(Base):
     async def as_json(self):
         return {
             'id': self.id,
+            'name': self.name,
             'type': self.chat_type,
             'notifiers': [notifier.id for notifier in self.notifiers],
             'params': self.params
