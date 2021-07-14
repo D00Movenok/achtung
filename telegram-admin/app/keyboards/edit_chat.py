@@ -10,6 +10,7 @@ async def edit_chat_get_keyboard(id: int):
     name_callback_data = edit_chat_callback.new(action='name', id=id)
     type_callback_data = edit_chat_callback.new(action='type', id=id)
     params_callback_data = edit_chat_callback.new(action='params', id=id)
+    delete_callback_data = edit_chat_callback.new(action='delete', id=id)
     back_callback_data = edit_chat_callback.new(action='back', id=id)
 
     markup.add(
@@ -20,6 +21,9 @@ async def edit_chat_get_keyboard(id: int):
     )
     markup.add(
         InlineKeyboardButton('Edit params', callback_data=params_callback_data)
+    )
+    markup.add(
+        InlineKeyboardButton('Delete', callback_data=delete_callback_data)
     )
     markup.add(
         InlineKeyboardButton('Back', callback_data=back_callback_data)

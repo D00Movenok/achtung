@@ -1,13 +1,15 @@
 import logging
 import typing
 
-from aiogram import Bot, Dispatcher, executor, types
+from aiogram import Bot, Dispatcher, types
 from aiogram.contrib.fsm_storage.memory import MemoryStorage
 from aiogram.dispatcher import FSMContext
 from aiogram.dispatcher.filters import Text
 from aiogram.dispatcher.filters.state import State, StatesGroup
+from aiogram.utils.executor import Executor
+from aiohttp import web
 
-from config import ADMIN_ID, API_TOKEN, DEBUG
+from config import ADMIN_ID, API_TOKEN, LOGS, WEBHOOK_HOST, WEBHOOK_PATH
 from keyboards import (chats_callback, chats_get_keyboard,
                        chats_types_callback, chats_types_get_keyboard,
                        edit_chat_callback, edit_chat_get_keyboard,
@@ -16,14 +18,18 @@ from keyboards import (chats_callback, chats_get_keyboard,
                        notifier_chats_callback, notifier_chats_get_keyboard,
                        notifier_enable_get_keyboard, notifiers_callback,
                        notifiers_enabled_callback, notifiers_get_keyboard)
-from utils.requests import (get_chat_by_id, get_notifier_by_id, get_types,
-                            post_chat, post_notifier, put_chat, put_notifier)
+from utils.requests import (delete_chat, delete_notifier, get_chat_by_id,
+                            get_notifier_by_id, get_types, post_chat,
+                            post_notifier, put_chat, put_notifier)
 from utils.text import chat_info, notifier_info
 
-# TODO: add webhooks
+WEBHOOK_URL = f"{WEBHOOK_HOST}{WEBHOOK_PATH}"
+
+
 bot = Bot(token=API_TOKEN)
-storage = MemoryStorage()
-dp = Dispatcher(bot, storage=storage)
+
+WEBAPP_HOST = '0.0.0.0'
+WEBAPP_PORT = 8080
 
 
 class Chat(StatesGroup):
@@ -55,16 +61,13 @@ class NotifierEdit(StatesGroup):
     targets = State()
 
 
-@dp.message_handler(commands=['start'], chat_id=ADMIN_ID)
 async def start(message: types.Message):
     await bot.send_message(message.from_user.id,
                            'Select what to do:',
                            reply_markup=await main_get_keyboard())
 
 
-@dp.message_handler(state='*', commands='cancel', chat_id=ADMIN_ID)
-@dp.message_handler(Text(equals='cancel', ignore_case=True), state='*')
-async def cancel_handler(message: types.Message, state: FSMContext):
+async def cancel(message: types.Message, state: FSMContext):
     current_state = await state.get_state()
     if current_state is None:
         return
@@ -75,8 +78,6 @@ async def cancel_handler(message: types.Message, state: FSMContext):
 
 
 # Main menu keyboard
-@dp.callback_query_handler(main_callback.filter(menu=['chats', 'notifiers']),
-                           chat_id=ADMIN_ID)
 async def main(query: types.CallbackQuery,
                callback_data: typing.Dict[str, str]):
     chat_id = query.message.chat.id
@@ -97,9 +98,6 @@ async def main(query: types.CallbackQuery,
 
 
 # Chats menu keyboard
-@dp.callback_query_handler(chats_callback.filter(
-                            action=['goto', 'create', 'back', 'open']),
-                           chat_id=ADMIN_ID)
 async def chats(query: types.CallbackQuery,
                 callback_data: typing.Dict[str, str]):
     chat_id = query.message.chat.id
@@ -136,9 +134,6 @@ async def chats(query: types.CallbackQuery,
 
 
 # Edit chat menu keyboard
-@dp.callback_query_handler(edit_chat_callback.filter(
-                            action=['name', 'type', 'params', 'back']),
-                           chat_id=ADMIN_ID)
 async def edit_chat(query: types.CallbackQuery,
                     callback_data: typing.Dict[str, str]):
     chat_id = query.message.chat.id
@@ -177,6 +172,19 @@ async def edit_chat(query: types.CallbackQuery,
                     data['params'] = dict()
 
         await bot.send_message(chat_id, f'Enter {answer}:')
+    elif callback_data['action'] == 'delete':
+        json_resp = await delete_chat(int(callback_data['id']))
+        if json_resp['status'] == 'ok':
+            markup = await chats_get_keyboard()
+            await bot.edit_message_text(chat_id=chat_id,
+                                        message_id=message_id,
+                                        text='Chats menu:',
+                                        reply_markup=markup)
+        else:
+            err = json_resp['error']
+            await bot.edit_message_text(chat_id=chat_id,
+                                        message_id=message_id,
+                                        text=f'Something went wrong: {err}')
     elif callback_data['action'] == 'back':
         markup = await chats_get_keyboard()
         await bot.edit_message_text(chat_id=chat_id,
@@ -186,9 +194,6 @@ async def edit_chat(query: types.CallbackQuery,
 
 
 # Notifiers menu keyboard
-@dp.callback_query_handler(notifiers_callback.filter(
-                            action=['goto', 'create', 'back', 'open']),
-                           chat_id=ADMIN_ID)
 async def notifiers(query: types.CallbackQuery,
                     callback_data: typing.Dict[str, str]):
     chat_id = query.message.chat.id
@@ -223,9 +228,6 @@ async def notifiers(query: types.CallbackQuery,
 
 
 # Edit notifier menu keyboard
-@dp.callback_query_handler(edit_notifier_callback.filter(
-                            action=['name', 'is_enabled', 'chats', 'back']),
-                           chat_id=ADMIN_ID)
 async def edit_notifier(query: types.CallbackQuery,
                         callback_data: typing.Dict[str, str]):
     chat_id = query.message.chat.id
@@ -268,6 +270,19 @@ async def edit_notifier(query: types.CallbackQuery,
                                     message_id=message_id,
                                     text='Select chats for notifications:',
                                     reply_markup=markup)
+    elif callback_data['action'] == 'delete':
+        json_resp = await delete_notifier(int(callback_data['id']))
+        if json_resp['status'] == 'ok':
+            markup = await notifiers_get_keyboard()
+            await bot.edit_message_text(chat_id=chat_id,
+                                        message_id=message_id,
+                                        text='Notifiers menu:',
+                                        reply_markup=markup)
+        else:
+            err = json_resp['error']
+            await bot.edit_message_text(chat_id=chat_id,
+                                        message_id=message_id,
+                                        text=f'Something went wrong: {err}')
     elif callback_data['action'] == 'back':
         markup = await notifiers_get_keyboard()
         await bot.edit_message_text(chat_id=chat_id,
@@ -277,8 +292,6 @@ async def edit_notifier(query: types.CallbackQuery,
 
 
 # Creating chat: select type
-@dp.callback_query_handler(chats_types_callback.filter(), state=Chat.type,
-                           chat_id=ADMIN_ID)
 async def create_chat_type(query: types.CallbackQuery, state: FSMContext,
                            callback_data: typing.Dict[str, str]):
     chat_id = query.message.chat.id
@@ -294,7 +307,6 @@ async def create_chat_type(query: types.CallbackQuery, state: FSMContext,
 
 
 # Creating chat: enter name
-@dp.message_handler(state=Chat.name, chat_id=ADMIN_ID)
 async def create_chat_name(message: types.Message, state: FSMContext):
     async with state.proxy() as data:
         data['name'] = message.text
@@ -310,7 +322,6 @@ async def create_chat_name(message: types.Message, state: FSMContext):
 
 
 # Creating chat: enter params
-@dp.message_handler(state=Chat.params, chat_id=ADMIN_ID)
 async def create_chat_params(message: types.Message, state: FSMContext):
     async with state.proxy() as data:
         key = list(data['params_text'].keys())[len(data['params'])]
@@ -340,7 +351,6 @@ async def create_chat_params(message: types.Message, state: FSMContext):
 
 
 # Edit chat: name
-@dp.message_handler(state=ChatName.id, chat_id=ADMIN_ID)
 async def edit_chat_name(message: types.Message, state: FSMContext):
     async with state.proxy() as data:
         params = {'name': message.text}
@@ -363,8 +373,6 @@ async def edit_chat_name(message: types.Message, state: FSMContext):
 
 
 # Edit chat: select type
-@dp.callback_query_handler(chats_types_callback.filter(),
-                           state=ChatTypeParams.type, chat_id=ADMIN_ID)
 async def edit_chat_type(query: types.CallbackQuery, state: FSMContext,
                          callback_data: typing.Dict[str, str]):
     chat_id = query.message.chat.id
@@ -397,7 +405,6 @@ async def edit_chat_type(query: types.CallbackQuery, state: FSMContext,
 
 
 # Edit chat: enter params
-@dp.message_handler(state=ChatTypeParams.params, chat_id=ADMIN_ID)
 async def edit_chat_params(message: types.Message, state: FSMContext):
     async with state.proxy() as data:
         key = list(data['params_text'].keys())[len(data['params'])]
@@ -427,7 +434,6 @@ async def edit_chat_params(message: types.Message, state: FSMContext):
 
 
 # Creating notifier: enter name
-@dp.message_handler(state=Notifier.name, chat_id=ADMIN_ID)
 async def create_notifier_name(message: types.Message, state: FSMContext):
     async with state.proxy() as data:
         data['name'] = message.text
@@ -441,10 +447,8 @@ async def create_notifier_name(message: types.Message, state: FSMContext):
 
 
 # Creating notifier: select chats
-@dp.callback_query_handler(notifier_chats_callback.filter(),
-                           state=Notifier.targets, chat_id=ADMIN_ID)
-async def notifier_ctreate_chats(query: types.CallbackQuery, state: FSMContext,
-                                 callback_data: typing.Dict[str, str]):
+async def create_notifier_chats(query: types.CallbackQuery, state: FSMContext,
+                                callback_data: typing.Dict[str, str]):
     chat_id = query.message.chat.id
     message_id = query.message.message_id
 
@@ -472,8 +476,6 @@ async def notifier_ctreate_chats(query: types.CallbackQuery, state: FSMContext,
 
 
 # Creating notifier: select is_enabled
-@dp.callback_query_handler(notifiers_enabled_callback.filter(),
-                           state=Notifier.is_enabled, chat_id=ADMIN_ID)
 async def create_notifier_enabled(query: types.CallbackQuery,
                                   state: FSMContext,
                                   callback_data: typing.Dict[str, str]):
@@ -506,7 +508,6 @@ async def create_notifier_enabled(query: types.CallbackQuery,
 
 
 # Edit notifier: name
-@dp.message_handler(state=NotifierEdit.id, chat_id=ADMIN_ID)
 async def edit_notifier_name(message: types.Message, state: FSMContext):
     chat_id = message.chat.id
 
@@ -532,8 +533,6 @@ async def edit_notifier_name(message: types.Message, state: FSMContext):
 
 
 # Edit notifier: select chats
-@dp.callback_query_handler(notifier_chats_callback.filter(),
-                           state=NotifierEdit.targets, chat_id=ADMIN_ID)
 async def edit_notifier_chats(query: types.CallbackQuery, state: FSMContext,
                               callback_data: typing.Dict[str, str]):
     chat_id = query.message.chat.id
@@ -574,9 +573,91 @@ async def edit_notifier_chats(query: types.CallbackQuery, state: FSMContext,
                                             reply_markup=markup)
 
 
-if __name__ == '__main__':
-    if DEBUG == 'DEBUG':
+async def on_startup(dp):
+    await bot.set_webhook(WEBHOOK_URL)
+
+
+async def on_shutdown(dp):
+    logging.warning('Shutting down..')
+    await bot.delete_webhook()
+
+    await dp.storage.close()
+    await dp.storage.wait_closed()
+
+    logging.warning('Bye!')
+
+
+async def init_func():
+    if LOGS == 'DEBUG':
         logging.basicConfig(level=logging.DEBUG)
     else:
         logging.basicConfig(level=logging.INFO)
-    executor.start_polling(dp)
+
+    storage = MemoryStorage()
+    dp = Dispatcher(bot, storage=storage)
+
+    dp.register_message_handler(start, commands=['start'], chat_id=ADMIN_ID)
+    dp.register_message_handler(cancel, state='*', commands='cancel',
+                                chat_id=ADMIN_ID)
+    dp.register_message_handler(cancel, Text(equals='cancel',
+                                             ignore_case=True), state='*')
+    dp.register_callback_query_handler(main,
+                                       main_callback.filter(
+                                           menu=['chats', 'notifiers']),
+                                       chat_id=ADMIN_ID)
+    dp.register_callback_query_handler(chats, chats_callback.filter(
+                                       action=['goto', 'create',
+                                               'back', 'open']),
+                                       chat_id=ADMIN_ID)
+    dp.register_callback_query_handler(edit_chat, edit_chat_callback.filter(
+                                       action=['name', 'type', 'delete',
+                                               'params', 'back']),
+                                       chat_id=ADMIN_ID)
+    dp.register_callback_query_handler(notifiers, notifiers_callback.filter(
+                                       action=['goto', 'create',
+                                               'back', 'open']),
+                                       chat_id=ADMIN_ID)
+    dp.register_callback_query_handler(edit_notifier,
+                                       edit_notifier_callback.filter(
+                                        action=['name', 'is_enabled', 'delete',
+                                                'chats', 'back']),
+                                       chat_id=ADMIN_ID)
+    dp.register_callback_query_handler(create_chat_type,
+                                       chats_types_callback.filter(),
+                                       state=Chat.type, chat_id=ADMIN_ID)
+    dp.register_message_handler(create_chat_name, state=Chat.name,
+                                chat_id=ADMIN_ID)
+    dp.register_message_handler(create_chat_params, state=Chat.params,
+                                chat_id=ADMIN_ID)
+    dp.register_message_handler(edit_chat_name, state=ChatName.id,
+                                chat_id=ADMIN_ID)
+    dp.register_callback_query_handler(edit_chat_type,
+                                       chats_types_callback.filter(),
+                                       state=ChatTypeParams.type,
+                                       chat_id=ADMIN_ID)
+    dp.register_message_handler(edit_chat_params, state=ChatTypeParams.params,
+                                chat_id=ADMIN_ID)
+    dp.register_message_handler(create_notifier_name, state=Notifier.name,
+                                chat_id=ADMIN_ID)
+    dp.register_callback_query_handler(create_notifier_chats,
+                                       notifier_chats_callback.filter(),
+                                       state=Notifier.targets,
+                                       chat_id=ADMIN_ID)
+    dp.register_callback_query_handler(create_notifier_enabled,
+                                       notifiers_enabled_callback.filter(),
+                                       state=Notifier.is_enabled,
+                                       chat_id=ADMIN_ID)
+    dp.register_message_handler(edit_notifier_name, state=NotifierEdit.id,
+                                chat_id=ADMIN_ID)
+    dp.register_callback_query_handler(edit_notifier_chats,
+                                       notifier_chats_callback.filter(),
+                                       state=NotifierEdit.targets,
+                                       chat_id=ADMIN_ID)
+
+    app = web.Application()
+    executor = Executor(dp, skip_updates=True)
+    executor.on_startup(on_startup)
+    executor.on_shutdown(on_shutdown)
+    executor._prepare_webhook(WEBHOOK_PATH, app=app)
+    await executor._startup_webhook()
+    return app

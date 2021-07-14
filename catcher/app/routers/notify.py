@@ -18,10 +18,14 @@ async def notify(request):
                 .options(selectinload(Notifier.targets)))
         result = await session.execute(stmt)
         notifier = result.scalars().first()
-
-        for chat in notifier.targets:
-            sender_class = mapper[chat.chat_type]
-            sender = sender_class(**chat.params)
-            await sender.send(data['message'])
-
-    return web.StreamResponse(status=200)
+        if notifier.is_enabled:
+            for chat in notifier.targets:
+                sender_class = mapper[chat.chat_type]
+                sender = sender_class(**chat.params)
+                await sender.send(data['message'])
+            return web.StreamResponse(status=200)
+        else:
+            return web.json_response({
+                'status': 'err',
+                'error': 'Notifier is disabled'
+            })
