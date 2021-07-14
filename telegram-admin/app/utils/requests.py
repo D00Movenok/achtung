@@ -59,6 +59,17 @@ async def put_chat(id: int, params: Dict):
     return json
 
 
+async def delete_chat(id: int):
+    async with ClientSession() as session:
+        async with session.delete(
+            CATCHER_URL + f'/api/chats/{id}',
+            headers={'X-Admin-Auth': ADMIN_PASS}
+        ) as resp:
+            json = await resp.json()
+
+    return json
+
+
 async def get_notifier(offset: int):
     async with ClientSession() as session:
         async with session.get(CATCHER_URL + '/api/notifiers', params={
@@ -97,6 +108,17 @@ async def put_notifier(id: int, params: Dict):
             CATCHER_URL + f'/api/notifiers/{id}',
             headers={'X-Admin-Auth': ADMIN_PASS},
             json=params
+        ) as resp:
+            json = await resp.json()
+
+    return json
+
+
+async def delete_notifier(id: int):
+    async with ClientSession() as session:
+        async with session.delete(
+            CATCHER_URL + f'/api/notifiers/{id}',
+            headers={'X-Admin-Auth': ADMIN_PASS}
         ) as resp:
             json = await resp.json()
 

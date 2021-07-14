@@ -9,7 +9,7 @@ from routers.notifiers import notifiers_route
 from routers.notify import notify_route
 
 
-async def init_func(argv):
+async def init_func():
     logging.basicConfig(level=logging.INFO)
 
     async with engine.begin() as conn:

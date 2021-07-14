@@ -1,1 +1,0 @@
-ADMIN_PASS = 'qweasd'

@@ -14,6 +14,7 @@ async def edit_notifier_get_keyboard(id: int):
     enabled_callback_data = edit_notifier_callback.new(action='is_enabled',
                                                        id=id)
     chats_callback_data = edit_notifier_callback.new(action='chats', id=id)
+    delete_callback_data = edit_notifier_callback.new(action='delete', id=id)
     back_callback_data = edit_notifier_callback.new(action='back', id=id)
 
     markup.add(
@@ -25,6 +26,9 @@ async def edit_notifier_get_keyboard(id: int):
     )
     markup.add(
         InlineKeyboardButton('Edit chats', callback_data=chats_callback_data)
+    )
+    markup.add(
+        InlineKeyboardButton('Delete', callback_data=delete_callback_data)
     )
     markup.add(
         InlineKeyboardButton('Back', callback_data=back_callback_data)
