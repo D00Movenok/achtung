@@ -14,7 +14,7 @@ async def chat_info(chat_data: Dict):
 
 async def notifier_info(notifier_data: Dict):
     text = f'Notifier name: {notifier_data["name"]}\n'
-    text += f'Notifier acces token: {notifier_data["access_token"]}\n'
+    text += f'Notifier access token: {notifier_data["access_token"]}\n'
     text += f'Notifier enabled: {notifier_data["is_enabled"]}\n'
     text += 'Targets:\n'
     for id in notifier_data['targets']:

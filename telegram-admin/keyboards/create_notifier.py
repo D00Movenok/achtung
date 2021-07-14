@@ -4,7 +4,7 @@ from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 from aiogram.utils.callback_data import CallbackData
 from aiogram.utils.emoji import emojize
 from config import PAGE_LIMIT
-from utils.requests import get_notifier
+from utils.requests import get_chats
 
 notifier_chats_callback = CallbackData('create_notifier', 'action', 'page',
                                        'target')
@@ -25,7 +25,7 @@ async def notifier_chats_get_keyboard(page: int = 0, ids: Set[int] = set()):
                                                        page=page,
                                                        target=-1)
 
-    json_resp = await get_notifier(page)
+    json_resp = await get_chats(page)
     is_max = len(json_resp) == PAGE_LIMIT
     for chat in json_resp:
         print(chat)
@@ -43,7 +43,7 @@ async def notifier_chats_get_keyboard(page: int = 0, ids: Set[int] = set()):
         )
 
     if is_max:
-        json_resp_next = await get_notifier(page + 1)
+        json_resp_next = await get_chats(page + 1)
         is_next = len(json_resp_next) > 0
     else:
         is_next = False
