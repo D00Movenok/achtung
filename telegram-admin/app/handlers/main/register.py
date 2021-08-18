@@ -1,8 +1,8 @@
 import aiogram
 from aiogram.dispatcher.filters import Text
 from config import ADMIN_ID
-from keyboards import main_callback
 
+from .callbacks import main_callback
 from .handlers import cancel, goto_chats, goto_notifiers, start
 
 

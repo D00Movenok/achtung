@@ -1,3 +1,3 @@
-from .main import register_main
-from .chats import register_chats
-from .notifiers import register_notifiers
+from .main.register import register_main
+from .chats.register import register_chats
+from .notifiers.register import register_notifiers

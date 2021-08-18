@@ -1,7 +1,5 @@
 import aiogram
 from config import ADMIN_ID
-from keyboards import (edit_notifier_callback, notifier_chats_callback,
-                       notifiers_callback, notifiers_enabled_callback)
 
 from .handlers import (back_to_main, back_to_notifiers, create_notifier,
                        create_notifier_chats_state,
@@ -9,6 +7,8 @@ from .handlers import (back_to_main, back_to_notifiers, create_notifier,
                        create_notifier_name_state, del_notifier, edit_chats,
                        edit_is_enabled, edit_name, edit_notifier_chats_state,
                        edit_notifier_name_state, goto_page, open_notifier)
+from .keyboards import (edit_notifier_callback, select_chats_callback,
+                        notifiers_callback, is_enabled_callback)
 from .states import Notifier, NotifierEdit
 
 
@@ -47,11 +47,11 @@ def register_notifiers(dp: aiogram.Dispatcher):
                                 state=Notifier.name,
                                 chat_id=ADMIN_ID)
     dp.register_callback_query_handler(create_notifier_chats_state,
-                                       notifier_chats_callback.filter(),
+                                       select_chats_callback.filter(),
                                        state=Notifier.targets,
                                        chat_id=ADMIN_ID)
     dp.register_callback_query_handler(create_notifier_enabled_state,
-                                       notifiers_enabled_callback.filter(),
+                                       is_enabled_callback.filter(),
                                        state=Notifier.is_enabled,
                                        chat_id=ADMIN_ID)
     # edit notifier
@@ -59,6 +59,6 @@ def register_notifiers(dp: aiogram.Dispatcher):
                                 state=NotifierEdit.id,
                                 chat_id=ADMIN_ID)
     dp.register_callback_query_handler(edit_notifier_chats_state,
-                                       notifier_chats_callback.filter(),
+                                       select_chats_callback.filter(),
                                        state=NotifierEdit.targets,
                                        chat_id=ADMIN_ID)

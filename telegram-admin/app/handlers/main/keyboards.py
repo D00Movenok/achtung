@@ -1,10 +1,9 @@
 from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
-from aiogram.utils.callback_data import CallbackData
 
-main_callback = CallbackData('main', 'menu')
+from .callbacks import main_callback
 
 
-async def main_get_keyboard():
+async def get_main_keyboard():
     markup = InlineKeyboardMarkup(row_width=2)
 
     chats_callback_data = main_callback.new(menu='chats')

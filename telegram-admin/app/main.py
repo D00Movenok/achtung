@@ -14,11 +14,11 @@ WEBAPP_HOST = '0.0.0.0'
 WEBAPP_PORT = 8080
 
 
-async def on_startup(dp):
+async def on_startup(dp: Dispatcher):
     await bot.set_webhook(WEBHOOK_URL)
 
 
-async def on_shutdown(dp):
+async def on_shutdown(dp: Dispatcher):
     logging.warning('Shutting down..')
     await bot.delete_webhook()
 
