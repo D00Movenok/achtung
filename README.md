@@ -1,17 +1,24 @@
-# Achtung
+# 📢✉️ Achtung
 
 Achtung is a modular, extensible multi-notifier that makes it easy to manage multiple notifications from all the tools you need.
 
 ## Content
 
-1. [Installation](#installation)
+1. [Screenshots](#screenshots)
+2. [Installation](#installation)
     1. [Configuration](#configuration)
         1. [Catcher](#catcher)
         2. [Telegram admin panel](#telegram-admin-panel)
         3. [docker-compose.yml](#docker-composeyml)
     2. [Launch](#launch)
-2. [Usage](#usage)
-3. [Develop new senders](#develop-new-senders)
+3. [Usage](#usage)
+4. [Develop new senders](#develop-new-senders)
+
+## Screenshots
+
+| ![chat example](img/chat_example.png) | ![chats menu](img/chats_menu.png) |
+|--|--|
+| ![create notifier](img/notifier_create.png) | ![notifier example](img/notifier_example.png) |
 
 ## Installation
 
@@ -22,7 +29,7 @@ Achtung is a modular, extensible multi-notifier that makes it easy to manage mul
 1. Generate random password for communicating with API and put it into .env file:
 
 ```env
-ADMIN_PASS=Iahee0eiz3ongaH1aethi7gaiDooza
+ADMIN_PASS=R3411yR4nd0m+P455w0rd
 ```
 
 #### Telegram admin panel
@@ -32,24 +39,26 @@ ADMIN_PASS=Iahee0eiz3ongaH1aethi7gaiDooza
 2. Enter your Telegram bot API token into .env file:
 
 ```env
-API_TOKEN=123456:ABC-DEF1234ghIkl-zyx57W2v1u123ew11
+API_TOKEN=**YOUR_TELEGRAM_BOT_API_TOKEN**
 ```
 
 3. Put comma-separated admin IDs into .env file:
 
 ```env
-ADMIN_ID=224702132,123456789
+ADMIN_ID=**FIRST_ADMIN_TG_ID**,**ANOTHER_ADMIN_TG_ID**
 ```
 
-4. Put your HOST machine addres/domain for webhooks into .env file:
+4. **If you want to use webhooks**, put your HOST machine address/domain into .env file:
 
 ```env
 WEBHOOK_HOST=https://achtung.example.com
 ```
 
+**If you don't want use webhooks**, edit [./telegram-admin/Dockerfile](telegram-admin/Dockerfile): comment 9 line and uncomment 10 line
+
 #### docker-compose.yml
 
-1. Replace services.nginx.ports in docker.compose.yml with IP and PORT you need:
+1. Replace services.nginx.ports in docker-compose.yml with IP and PORT you need:
 
 ```yml
 ports:
@@ -69,7 +78,7 @@ Remember, the last 8080 is required.
 2. Run:
 
 ```bash
-docker-compose up --build -d
+docker-compose up -d
 ```
 
 ## Usage
