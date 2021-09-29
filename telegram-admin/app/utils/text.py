@@ -1,5 +1,6 @@
 from typing import Dict
-from utils.requests import get_chat_by_id
+
+from .requests import get_chat_by_id
 
 
 async def chat_info(chat_data: Dict):
