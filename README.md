@@ -4,15 +4,32 @@ Achtung is a modular, extensible multi-notifier that makes it easy to manage mul
 
 ## Content
 
-1. [Screenshots](#screenshots)
-2. [Installation](#installation)
+1. [Features](#features)
+2. [Screenshots](#screenshots)
+3. [Installation](#installation)
     1. [Configuration](#configuration)
         1. [Catcher](#catcher)
         2. [Telegram admin panel](#telegram-admin-panel)
         3. [docker-compose.yml](#docker-composeyml)
     2. [Launch](#launch)
-3. [Usage](#usage)
-4. [Develop new senders](#develop-new-senders)
+4. [Usage](#usage)
+5. [Adding new messengers](#adding-new-messengers-senders)
+
+## Features
+
+* Easy to use: one command to deploy, user-friendly admin panel
+
+* Easy to extend: add messengers you want in 10 lines of code
+
+* Enable/disable notifications in one click
+
+* Send notifications to multiple chats and messengers
+
+* Already implemented messengers:
+
+  * Telegram
+
+  * Discord
 
 ## Screenshots
 
@@ -54,7 +71,11 @@ ADMIN_ID=**FIRST_ADMIN_TG_ID**,**ANOTHER_ADMIN_TG_ID**
 WEBHOOK_HOST=https://achtung.example.com
 ```
 
-**If you don't want use webhooks**, edit [./telegram-admin/Dockerfile](telegram-admin/Dockerfile): comment 9 line and uncomment 10 line
+**If you don't want use webhooks**, edit .env:
+
+```env
+WEBHOOK=false
+```
 
 #### docker-compose.yml
 
@@ -97,7 +118,7 @@ docker-compose up -d
 curl 'https://achtung.example.com/api/notify' -d '{"access_token":"TOKEN_HERE", "message":"NOTIFICATIONS_HERE"}'
 ```
 
-## Develop new senders
+## Adding new messengers (senders)
 
 Sender is a class for sending notifications. Let's develop Sender for Telegram.
 
@@ -142,7 +163,7 @@ required_fields = {
 ```
 
 You can get keys (token, chat_id) from `self.config['KEY']`.</br>
-The description is required to form a request for the user to enter a specific parameter: `Please, enter {DESCRIPTION}`.
+The description is required to inform the user which parameter should be entered: `Enter {DESCRIPTION}`.
 
 3. In `__init__(self, **kwargs)` you can create additional variables (e.g. `self.url`):
 
