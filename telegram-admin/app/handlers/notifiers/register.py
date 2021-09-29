@@ -1,15 +1,15 @@
 import aiogram
 from config import ADMIN_ID
 
-from .handlers import (back_to_main, back_to_notifiers, create_notifier,
-                       create_notifier_chats_state,
+from .handlers import (create_notifier, create_notifier_chats_state,
                        create_notifier_enabled_state,
-                       create_notifier_name_state, del_notifier, edit_chats,
+                       create_notifier_name_state, delete_notifier, edit_chats,
                        edit_is_enabled, edit_name, edit_notifier_chats_state,
-                       edit_notifier_name_state, goto_page, open_notifier)
-from .keyboards import (edit_notifier_callback, select_chats_callback,
-                        notifiers_callback, is_enabled_callback)
-from .states import Notifier, NotifierEdit
+                       edit_notifier_name_state, go_back_to_main,
+                       go_back_to_notifiers, goto_page, open_notifier)
+from .keyboards import (edit_notifier_callback, is_enabled_callback,
+                        notifiers_callback, select_chats_callback)
+from .states import NotifierCreateState, NotifierEditState
 
 
 def register_notifiers(dp: aiogram.Dispatcher):
@@ -19,7 +19,7 @@ def register_notifiers(dp: aiogram.Dispatcher):
     dp.register_callback_query_handler(create_notifier,
                                        notifiers_callback.filter(
                                         action='create'), chat_id=ADMIN_ID)
-    dp.register_callback_query_handler(back_to_main,
+    dp.register_callback_query_handler(go_back_to_main,
                                        notifiers_callback.filter(
                                         action='back'), chat_id=ADMIN_ID)
     dp.register_callback_query_handler(open_notifier,
@@ -33,32 +33,32 @@ def register_notifiers(dp: aiogram.Dispatcher):
     dp.register_callback_query_handler(edit_is_enabled,
                                        edit_notifier_callback.filter(
                                         action='is_enabled'), chat_id=ADMIN_ID)
-    dp.register_callback_query_handler(del_notifier,
+    dp.register_callback_query_handler(delete_notifier,
                                        edit_notifier_callback.filter(
                                         action='delete'), chat_id=ADMIN_ID)
     dp.register_callback_query_handler(edit_chats,
                                        edit_notifier_callback.filter(
                                         action='chats'), chat_id=ADMIN_ID)
-    dp.register_callback_query_handler(back_to_notifiers,
+    dp.register_callback_query_handler(go_back_to_notifiers,
                                        edit_notifier_callback.filter(
                                         action='back'), chat_id=ADMIN_ID)
     # create notifier
     dp.register_message_handler(create_notifier_name_state,
-                                state=Notifier.name,
+                                state=NotifierCreateState.name,
                                 chat_id=ADMIN_ID)
     dp.register_callback_query_handler(create_notifier_chats_state,
                                        select_chats_callback.filter(),
-                                       state=Notifier.targets,
+                                       state=NotifierCreateState.targets,
                                        chat_id=ADMIN_ID)
     dp.register_callback_query_handler(create_notifier_enabled_state,
                                        is_enabled_callback.filter(),
-                                       state=Notifier.is_enabled,
+                                       state=NotifierCreateState.is_enabled,
                                        chat_id=ADMIN_ID)
     # edit notifier
     dp.register_message_handler(edit_notifier_name_state,
-                                state=NotifierEdit.id,
+                                state=NotifierEditState.id,
                                 chat_id=ADMIN_ID)
     dp.register_callback_query_handler(edit_notifier_chats_state,
                                        select_chats_callback.filter(),
-                                       state=NotifierEdit.targets,
+                                       state=NotifierEditState.targets,
                                        chat_id=ADMIN_ID)

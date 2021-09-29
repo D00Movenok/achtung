@@ -3,15 +3,15 @@ import typing
 from aiogram import Dispatcher, types
 from aiogram.dispatcher import FSMContext
 from config import bot
-from utils.requests import (delete_chat, get_chat_by_id, get_types, post_chat,
-                            put_chat)
+from utils.requests import delete_chat as delete_chat_request
+from utils.requests import get_chat_by_id, get_types, post_chat, put_chat
 from utils.text import chat_info
 
 from handlers.main.keyboards import get_main_keyboard
 
-from .keyboards import (get_chats_keyboard, get_types_keyboard,
-                        get_edit_keyboard)
-from .states import Chat, ChatName, ChatTypeParams
+from .keyboards import (get_chats_keyboard, get_edit_keyboard,
+                        get_types_keyboard)
+from .states import ChatCreateState, ChatEditNameState, ChatEditTypeParamsState
 
 
 async def goto_page(query: types.CallbackQuery,
@@ -43,7 +43,7 @@ async def create_chat(query: types.CallbackQuery,
                       callback_data: typing.Dict[str, str]):
     chat_id = query.message.chat.id
     message_id = query.message.message_id
-    await Chat.type.set()
+    await ChatCreateState.type.set()
     markup = await get_types_keyboard()
     await bot.edit_message_text(chat_id=chat_id,
                                 message_id=message_id,
@@ -51,8 +51,8 @@ async def create_chat(query: types.CallbackQuery,
                                 reply_markup=markup)
 
 
-async def back_to_main(query: types.CallbackQuery,
-                       callback_data: typing.Dict[str, str]):
+async def go_back_to_main(query: types.CallbackQuery,
+                          callback_data: typing.Dict[str, str]):
     chat_id = query.message.chat.id
     message_id = query.message.message_id
     markup = await get_main_keyboard()
@@ -66,7 +66,7 @@ async def edit_name(query: types.CallbackQuery,
                     callback_data: typing.Dict[str, str]):
     chat_id = query.message.chat.id
     message_id = query.message.message_id
-    await ChatName.id.set()
+    await ChatEditNameState.id.set()
     state = Dispatcher.get_current().current_state()
     await state.update_data(id=int(callback_data['id']))
     await bot.edit_message_text(chat_id=chat_id,
@@ -78,7 +78,7 @@ async def edit_type(query: types.CallbackQuery,
                     callback_data: typing.Dict[str, str]):
     chat_id = query.message.chat.id
     message_id = query.message.message_id
-    await ChatTypeParams.type.set()
+    await ChatEditTypeParamsState.type.set()
     chat_data = await get_chat_by_id(int(callback_data['id']))
     state = Dispatcher.get_current().current_state()
     await state.update_data(id=int(callback_data['id']))
@@ -86,7 +86,7 @@ async def edit_type(query: types.CallbackQuery,
     markup = await get_types_keyboard()
     await bot.edit_message_text(chat_id=chat_id,
                                 message_id=message_id,
-                                text='Enter new chat name:',
+                                text='Select chat type:',
                                 reply_markup=markup)
 
 
@@ -94,12 +94,14 @@ async def edit_params(query: types.CallbackQuery,
                       callback_data: typing.Dict[str, str]):
     chat_id = query.message.chat.id
     message_id = query.message.message_id
-    await ChatTypeParams.params.set()
+    await ChatEditTypeParamsState.params.set()
     chat_data = await get_chat_by_id(int(callback_data['id']))
     state = Dispatcher.get_current().current_state()
     async with state.proxy() as data:
         data['id'] = int(callback_data['id'])
         data['type'] = chat_data['type']
+
+        # prepare to get params
         types = await get_types()
         for chat_type in types:
             if chat_type['type'] == chat_data['type']:
@@ -111,11 +113,11 @@ async def edit_params(query: types.CallbackQuery,
                                     text=f'Enter {answer}:')
 
 
-async def del_chat(query: types.CallbackQuery,
-                   callback_data: typing.Dict[str, str]):
+async def delete_chat(query: types.CallbackQuery,
+                      callback_data: typing.Dict[str, str]):
     chat_id = query.message.chat.id
     message_id = query.message.message_id
-    json_resp = await delete_chat(int(callback_data['id']))
+    json_resp = await delete_chat_request(int(callback_data['id']))
     if json_resp['status'] == 'ok':
         markup = await get_chats_keyboard()
         await bot.edit_message_text(chat_id=chat_id,
@@ -129,8 +131,8 @@ async def del_chat(query: types.CallbackQuery,
                                     text=f'Something went wrong: {err}')
 
 
-async def back_to_chat(query: types.CallbackQuery,
-                       callback_data: typing.Dict[str, str]):
+async def go_back_to_chat(query: types.CallbackQuery,
+                          callback_data: typing.Dict[str, str]):
     chat_id = query.message.chat.id
     message_id = query.message.message_id
     markup = await get_chats_keyboard()
@@ -148,7 +150,7 @@ async def create_chat_type_state(query: types.CallbackQuery, state: FSMContext,
     async with state.proxy() as data:
         data['type'] = callback_data['type']
 
-    await Chat.next()
+    await ChatCreateState.next()
     await bot.edit_message_text(chat_id=chat_id,
                                 message_id=message_id,
                                 text='Enter new chat name:')
@@ -164,7 +166,7 @@ async def create_chat_name_state(message: types.Message, state: FSMContext):
                 data['params_text'] = chat_type['fields']
                 data['params'] = dict()
 
-    await Chat.next()
+    await ChatCreateState.next()
     await bot.send_message(message.from_user.id, f'Enter {answer}:')
 
 
@@ -173,6 +175,7 @@ async def create_chat_params_state(message: types.Message, state: FSMContext):
         key = list(data['params_text'].keys())[len(data['params'])]
         data['params'][key] = message.text
         if len(data['params']) >= len(data['params_text'].keys()):
+            # all params entered
             params = {
                 'type': data['type'],
                 'name': data['name'],
@@ -192,6 +195,7 @@ async def create_chat_params_state(message: types.Message, state: FSMContext):
                 await bot.send_message(message.from_user.id,
                                        f'Something went wrong: {err}')
         else:
+            # enter params
             answer = list(data['params_text'].values())[len(data['params'])]
             await bot.send_message(message.from_user.id, f'Enter {answer}:')
 
@@ -223,6 +227,7 @@ async def edit_chat_type_state(query: types.CallbackQuery, state: FSMContext,
     message_id = query.message.message_id
 
     async with state.proxy() as data:
+        # old type == new type
         if data['type'] == callback_data['type']:
             id = data['id']
             chat_data = await get_chat_by_id(id)
@@ -235,8 +240,9 @@ async def edit_chat_type_state(query: types.CallbackQuery, state: FSMContext,
                                         reply_markup=markup)
             return
 
+        # chaning type
         data['type'] = callback_data['type']
-
+        # prepare to get params for new type
         types = await get_types()
         for chat_type in types:
             if chat_type['type'] == data['type']:
@@ -244,7 +250,7 @@ async def edit_chat_type_state(query: types.CallbackQuery, state: FSMContext,
                 data['params_text'] = chat_type['fields']
                 data['params'] = dict()
 
-    await ChatTypeParams.next()
+    await ChatEditTypeParamsState.next()
     await bot.send_message(chat_id, f'Enter {answer}:')
 
 
@@ -253,6 +259,7 @@ async def edit_chat_params_state(message: types.Message, state: FSMContext):
         key = list(data['params_text'].keys())[len(data['params'])]
         data['params'][key] = message.text
         if len(data['params']) >= len(data['params_text'].keys()):
+            # all params entered
             id = data['id']
             params = {
                 'type': data['type'],
@@ -272,5 +279,6 @@ async def edit_chat_params_state(message: types.Message, state: FSMContext):
                 await bot.send_message(message.from_user.id,
                                        f'Something went wrong: {err}')
         else:
+            # enter params
             answer = list(data['params_text'].values())[len(data['params'])]
             await bot.send_message(message.from_user.id, f'Enter {answer}:')

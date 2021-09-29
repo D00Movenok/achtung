@@ -1,18 +1,18 @@
 from aiogram.dispatcher.filters.state import State, StatesGroup
 
 
-class Chat(StatesGroup):
+class ChatCreateState(StatesGroup):
     type = State()
     name = State()
     params = State()
     params_text = State()
 
 
-class ChatName(StatesGroup):
+class ChatEditNameState(StatesGroup):
     id = State()
 
 
-class ChatTypeParams(StatesGroup):
+class ChatEditTypeParamsState(StatesGroup):
     id = State()
     type = State()
     params = State()

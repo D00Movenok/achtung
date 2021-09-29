@@ -72,7 +72,6 @@ async def get_select_chats_keyboard(page: int = 0, ids: Set[int] = set()):
     json_resp = await get_chats(page)
     is_max = len(json_resp) == PAGE_LIMIT
     for chat in json_resp:
-        print(chat)
         open_callback_data = select_chats_callback.new(
             action='add',
             page=page,
