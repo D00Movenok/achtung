@@ -1,4 +1,4 @@
-openapi: 3.1.0
+openapi: 3.0.0
 info:
   version: 1.0.0
   title: 'Achtung Notifier API'
@@ -319,14 +319,14 @@ components:
         - $ref: '#/components/schemas/NotifierInfoNoIdentity'
   parameters:
     OffsetMixin:
-      in: path
+      in: query
       name: offset
       schema:
         type: integer
       description: Offset in entities list
       example: 10
     LimitMixin:
-      in: path
+      in: query
       name: limit
       schema:
         type: integer

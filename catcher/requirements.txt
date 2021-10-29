@@ -10,3 +10,4 @@ SQLAlchemy==1.4.11
 toml==0.10.2
 typing-extensions==3.7.4.3
 yarl==1.6.3
+aiohttp-swagger3
