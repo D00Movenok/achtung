@@ -4,16 +4,18 @@ Achtung is a modular, extensible multi-notifier that makes it easy to manage mul
 
 ## Content
 
-1. [Features](#features)
-2. [Screenshots](#screenshots)
-3. [Installation](#installation)
-    1. [Configuration](#configuration)
-        1. [Catcher](#catcher)
-        2. [Telegram admin panel](#telegram-admin-panel)
-        3. [docker-compose.yml](#docker-composeyml)
-    2. [Launch](#launch)
-4. [Usage](#usage)
-5. [Adding new messengers](#adding-new-messengers-senders)
+- [📢✉️ Achtung](#️-achtung)
+  - [Content](#content)
+  - [Features](#features)
+  - [Screenshots](#screenshots)
+  - [Installation](#installation)
+    - [Configuration](#configuration)
+      - [Catcher](#catcher)
+      - [Telegram admin panel](#telegram-admin-panel)
+      - [docker-compose.yml](#docker-composeyml)
+    - [Launch](#launch)
+  - [Usage](#usage)
+  - [Adding new messengers (senders)](#adding-new-messengers-senders)
 
 ## Features
 
@@ -47,6 +49,11 @@ Achtung is a modular, extensible multi-notifier that makes it easy to manage mul
 
 ```env
 ADMIN_PASS=R3411yR4nd0m+P455w0rd
+```
+
+2. There is also Catcher OpenAPI documentation. If you wanna Swagger UI for the documentation to be enabled, put it into .env file:
+```env
+API_DOC_ENABLED=true
 ```
 
 #### Telegram admin panel

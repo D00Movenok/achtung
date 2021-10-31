@@ -8,8 +8,9 @@ from common.models import Base
 from routers.chats import chats_route
 from routers.notifiers import notifiers_route
 from routers.notify import notify_route
+from os import getenv
 
-API_DOC_ENABLED = True
+API_DOC_ENABLED = getenv('API_DOC_ENABLED', 'false').lower() == 'true'
 
 
 async def init_func():
