@@ -16,6 +16,11 @@ async def start(message: types.Message):
                            reply_markup=await get_main_keyboard())
 
 
+async def get_id(message: types.Message):
+    await bot.send_message(message.chat.id,
+                           message.chat.id)
+
+
 # cansel any state
 async def cancel(message: types.Message, state: FSMContext):
     current_state = await state.get_state()

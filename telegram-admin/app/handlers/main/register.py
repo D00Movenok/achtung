@@ -3,11 +3,12 @@ from aiogram.dispatcher.filters import Text
 from config import ADMIN_ID
 
 from .callbacks import main_callback
-from .handlers import cancel, goto_chats, goto_notifiers, start
+from .handlers import cancel, get_id, goto_chats, goto_notifiers, start
 
 
 def register_main(dp: aiogram.Dispatcher):
     dp.register_message_handler(start, commands=['start'], chat_id=ADMIN_ID)
+    dp.register_message_handler(get_id, commands=['id'])
     dp.register_message_handler(cancel, state='*', commands='cancel',
                                 chat_id=ADMIN_ID)
     dp.register_message_handler(cancel, Text(equals='cancel',
