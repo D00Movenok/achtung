@@ -23,9 +23,11 @@ async def notify(request):
                 sender_class = mapper[chat.chat_type]
                 sender = sender_class(**chat.params)
                 await sender.send(data['message'])
-            return web.StreamResponse(status=200)
+            return web.json_response({
+                'status': 'ok'
+            })
         else:
             return web.json_response({
-                'status': 'err',
+                'status': 'error',
                 'error': 'Notifier is disabled'
             })

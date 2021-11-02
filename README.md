@@ -49,6 +49,11 @@ Achtung is a modular, extensible multi-notifier that makes it easy to manage mul
 ADMIN_PASS=R3411yR4nd0m+P455w0rd
 ```
 
+2. There is also Catcher OpenAPI documentation. If you wanna Swagger UI for the documentation to be enabled, put it into .env file:
+```env
+API_DOC_ENABLED=true
+```
+
 #### Telegram admin panel
 
 1. Register a bot for Telegram admin panel: @BotFather.
