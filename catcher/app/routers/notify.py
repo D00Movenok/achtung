@@ -18,7 +18,7 @@ async def notify(request):
                 .options(selectinload(Notifier.targets)))
         result = await session.execute(stmt)
         notifier = result.scalars().first()
-        if notifier.is_enabled:
+        if notifier is not None and notifier.is_enabled:
             for chat in notifier.targets:
                 sender_class = mapper[chat.chat_type]
                 sender = sender_class(**chat.params)
@@ -29,5 +29,5 @@ async def notify(request):
         else:
             return web.json_response({
                 'status': 'error',
-                'error': 'Notifier is disabled'
+                'error': 'Unauthorized or notifier is  disabled'
             })
