@@ -1,4 +1,4 @@
-aiohttp==3.8.5
+aiohttp==3.9.0
 aiosqlite==0.17.0
 SQLAlchemy==1.4.11
 typing-extensions==3.7.4.3
